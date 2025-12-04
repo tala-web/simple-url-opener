@@ -1,0 +1,15 @@
+# macOS 系統產生的垃圾檔
+.DS_Store
+
+# Windows 系統產生的垃圾檔
+Thumbs.db
+Desktop.ini
+
+# VS Code 編輯器設定檔 (如果有的話)
+.vscode/
+
+# 記錄檔
+*.log
+
+# 如果之後您不小心安裝了 node_modules，這行能避免上傳數萬個檔案
+node_modules/
