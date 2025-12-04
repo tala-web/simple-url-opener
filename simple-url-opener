@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自動網頁開啟工具</title>
+    <style>
+        /* 定義配色變數 (預設淺色) */
+        :root {
+            --bg-body: #f4f4f9;
+            --bg-container: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --border-color: #ccc;
+            --input-bg: #ffffff;
+            --input-disabled: #e9ecef;
+            --status-bg: #e9ecef;
+            --warning-bg: #fff3cd;
+            --warning-text: #856404;
+            --warning-border: #ffeeba;
+            --log-time: #007bff;
+        }
+
+        /* 深色模式變數覆寫 */
+        body.dark-mode {
+            --bg-body: #121212;
+            --bg-container: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #444;
+            --input-bg: #2d2d2d;
+            --input-disabled: #3a3a3a;
+            --status-bg: #2a2a2a;
+            --warning-bg: #3e3310;   /* 深黃色背景 */
+            --warning-text: #ffda6a; /* 淺黃色文字 */
+            --warning-border: #5c4d18;
+            --log-time: #4dabf7;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s; /* 平滑過渡動畫 */
+        }
+        
+        /* 標題區塊與切換按鈕的排版 */
+        .header-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h2 { margin: 0; color: var(--text-main); }
+
+        .theme-btn {
+            background: none;
+            border: 2px solid var(--border-color);
+            color: var(--text-main);
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .theme-btn:hover {
+            border-color: var(--text-main);
+        }
+
+        .container {
+            background: var(--bg-container);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
+        }
+
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: 14px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        textarea:disabled {
+            background-color: var(--input-disabled);
+            cursor: not-allowed;
+            color: var(--text-muted);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        input[type="number"] {
+            padding: 8px;
+            width: 80px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-main);
+        }
+        input[type="number"]:disabled {
+            background-color: var(--input-disabled);
+        }
+
+        button.action-btn {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            color: white;
+            transition: background 0.3s, opacity 0.3s;
+        }
+        
+        #btnStart { background-color: #28a745; }
+        #btnStart:hover { background-color: #218838; }
+        #btnStart:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.6; }
+        
+        #btnStop { background-color: #dc3545; }
+        #btnStop:hover { background-color: #c82333; }
+        #btnStop:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.6; }
+
+        #btnCloseAll { background-color: #fd7e14; }
+        #btnCloseAll:hover { background-color: #e36d0e; }
+        #btnCloseAll:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.6; }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--status-bg);
+            border-radius: 4px;
+            border-left: 5px solid #007bff;
+            transition: background-color 0.3s;
+        }
+        .log {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            max-height: 150px;
+            overflow-y: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+        .log div { margin-bottom: 4px; }
+        .log-time { color: var(--log-time); font-family: monospace; margin-right: 5px; }
+
+        .warning {
+            color: var(--warning-text);
+            background-color: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header-area">
+    </div>
+
+<div class="container">
+    <div class="header-area">
+        <h2>自動網頁開啟工具</h2>
+        <button id="themeToggle" class="theme-btn" onclick="toggleTheme()">🌙 切換深色</button>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ 提醒：</strong> 請允許瀏覽器的「彈出視窗」權限，否則無法自動開啟分頁。 ⚠️
+    </div>
+
+    <div>
+        <label for="urlInput">輸入網址列表：</label>
+        <textarea id="urlInput" autocomplete="off" placeholder="直接貼上網址(一行一個)即可，會自動忽略前面的編號或文字。&#10;例如：&#10;1、https://abc&#10;2. https://def"></textarea>
+    </div>
+
+    <div class="controls">
+        <div>
+            <label for="intervalInput">間隔 (秒)：</label>
+            <input type="number" id="intervalInput" value="120" min="1" autocomplete="off">
+        </div>
+        <button id="btnStart" class="action-btn" onclick="startSequence()">開始執行</button>
+        <button id="btnStop" class="action-btn" onclick="stopSequence()" disabled>停止執行</button>
+        <button id="btnCloseAll" class="action-btn" onclick="closeAllOpened()" disabled>關閉分頁</button>
+    </div>
+
+    <div class="status-box">
+        <div><strong>目前狀態：</strong> <span id="statusText">準備就緒</span></div>
+        <div id="countdown" style="margin-top:5px; color:#d9534f; font-weight:bold;"></div>
+    </div>
+    
+    <div class="log" id="logArea"></div>
+</div>
+
+<script>
+    let timer = null;
+    let countdownTimer = null;
+    let urls = [];
+    let currentIndex = 0;
+    let secondsLeft = 0;
+    let openedWindows = [];
+
+    // --- 頁面載入時的初始化 ---
+    window.addEventListener('load', function() {
+        resetControls();
+        loadThemePreference(); // 載入上次的主題設定
+    });
+
+    // --- 深色模式切換邏輯 ---
+    function toggleTheme() {
+        const body = document.body;
+        const btn = document.getElementById('themeToggle');
+        
+        // 切換 class
+        body.classList.toggle('dark-mode');
+        
+        // 判斷目前是否為深色模式，並儲存設定與更新按鈕文字
+        if (body.classList.contains('dark-mode')) {
+            localStorage.setItem('theme', 'dark');
+            btn.innerText = "☀️ 切換淺色";
+        } else {
+            localStorage.setItem('theme', 'light');
+            btn.innerText = "🌙 切換深色";
+        }
+    }
+
+    function loadThemePreference() {
+        const savedTheme = localStorage.getItem('theme');
+        const btn = document.getElementById('themeToggle');
+        
+        // 如果上次存的是 dark，就加上 class
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            btn.innerText = "☀️ 切換淺色";
+        }
+    }
+
+    // --- 核心功能邏輯 ---
+
+    function log(message) {
+        const logArea = document.getElementById('logArea');
+        const time = new Date().toLocaleTimeString();
+        // 使用 span 標籤讓時間顏色可隨主題變更
+        logArea.innerHTML = `<div><span class="log-time">[${time}]</span> ${message}</div>` + logArea.innerHTML;
+    }
+
+    function resetControls() {
+        document.getElementById('urlInput').disabled = false;
+        document.getElementById('intervalInput').disabled = false;
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled = true;
+        document.getElementById('btnCloseAll').disabled = true;
+        document.getElementById('statusText').innerText = "準備就緒";
+        document.getElementById('countdown').innerText = "";
+    }
+
+    function startSequence() {
+        const input = document.getElementById('urlInput').value;
+        
+        // 網址處理 (Regex)
+        urls = input.split('\n')
+            .map(u => u.trim()) 
+            .map(u => u.replace(/^.*?(?=https?:\/\/)/i, '')) 
+            .filter(u => u.length > 0 && (u.startsWith('http://') || u.startsWith('https://')));
+
+        if (urls.length === 0) {
+            alert("找不到有效的網址！請確認內容包含 http:// 或 https://");
+            return;
+        }
+
+        const intervalSeconds = parseInt(document.getElementById('intervalInput').value);
+        if (isNaN(intervalSeconds) || intervalSeconds < 1) {
+            alert("請輸入有效的間隔秒數");
+            return;
+        }
+
+        openedWindows = [];
+        
+        document.getElementById('urlInput').disabled = true;
+        document.getElementById('intervalInput').disabled = true;
+        document.getElementById('btnStart').disabled = true;
+        document.getElementById('btnStop').disabled = false;
+        document.getElementById('btnCloseAll').disabled = false;
+        
+        currentIndex = 0;
+        document.getElementById('statusText').innerText = "執行中...";
+        log(`任務開始，已解析出 ${urls.length} 個乾淨網址。`);
+
+        openNext();
+
+        if (document.getElementById('statusText').innerText !== "全部完成！") {
+            startCountdown(intervalSeconds);
+        }
+    }
+
+    function openNext() {
+        if (currentIndex >= urls.length) return;
+
+        const url = urls[currentIndex];
+        
+        try {
+            const win = window.open(url, '_blank');
+            if (!win) {
+                log(`<span style="color:red">開啟失敗 (被攔截)：${url}</span>`);
+                alert("瀏覽器攔截了彈出視窗，請允許本頁面彈出視窗後重試。");
+                stopSequence();
+                return;
+            } else {
+                openedWindows.push(win);
+                log(`已開啟 (${currentIndex + 1}/${urls.length}): ${url}`);
+            }
+        } catch (e) {
+            log(`發生錯誤: ${e.message}`);
+        }
+
+        currentIndex++;
+
+        // 自動停止檢查
+        if (currentIndex >= urls.length) {
+            stopSequence(); 
+            document.getElementById('statusText').innerText = "全部完成！";
+            log("所有網址已開啟完畢。");
+        }
+    }
+
+    function startCountdown(duration) {
+        secondsLeft = duration;
+        updateCountdownDisplay();
+
+        if (countdownTimer) clearInterval(countdownTimer);
+
+        countdownTimer = setInterval(() => {
+            secondsLeft--;
+            updateCountdownDisplay();
+
+            if (secondsLeft <= 0) {
+                clearInterval(countdownTimer);
+                openNext(); 
+                
+                if (currentIndex < urls.length) {
+                    startCountdown(duration);
+                }
+            }
+        }, 1000);
+    }
+
+    function updateCountdownDisplay() {
+        const display = document.getElementById('countdown');
+        if (secondsLeft > 0) {
+            display.innerText = `下一個網址將在 ${secondsLeft} 秒後開啟...`;
+        } else {
+            display.innerText = "";
+        }
+    }
+
+    function stopSequence() {
+        if (countdownTimer) clearInterval(countdownTimer);
+        
+        document.getElementById('urlInput').disabled = false;
+        document.getElementById('intervalInput').disabled = false;
+        document.getElementById('btnStart').disabled = false;
+        document.getElementById('btnStop').disabled = true;
+        
+        document.getElementById('countdown').innerText = "";
+        
+        if (document.getElementById('statusText').innerText !== "全部完成！") {
+             document.getElementById('statusText').innerText = "已停止";
+             log("任務停止。");
+        }
+    }
+
+    function closeAllOpened() {
+        if (openedWindows.length === 0) {
+            alert("目前沒有由程式記錄的開啟分頁。");
+            return;
+        }
+
+        let count = 0;
+        openedWindows.forEach(win => {
+            if (win && !win.closed) {
+                win.close();
+                count++;
+            }
+        });
+
+        log(`已執行關閉動作，共關閉 ${count} 個分頁。`);
+        openedWindows = [];
+        document.getElementById('btnCloseAll').disabled = true; 
+    }
+</script>
+
+</body>
+</html>
